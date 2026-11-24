@@ -1,0 +1,1385 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Research Prospectus</title>
+    <link rel="icon" type="image/png" href="favicon.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@200..800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://player.vimeo.com/api/player.js"></script>
+
+    <style>
+      :root {
+        --wall: #89ce00;
+        --spine: #0073e6;
+        --board: #e6308a;
+        --title-hl: #5ba300;
+        --title-hl-hover: #b51963;
+        --marker: #f57600;
+        --toggle: #000000;
+        --text: #ffffff;
+        --thickness: 26px;
+        --gap: 2px;
+        --pad: 10px;
+        --square: 12px;
+        --tracking: 0.01em;
+        --cap-measure: 340px;
+
+        --frame-w: 100vw;
+        --frame-h: 100dvh;
+        --ease: 380ms cubic-bezier(0.6, 0, 0.2, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        scrollbar-width: none;
+      }
+
+      html::-webkit-scrollbar {
+        display: none;
+      }
+
+      html.is-reel {
+        --reel-margin: 24px;
+        --frame-h: min(
+          calc(100dvh - var(--reel-margin) * 2),
+          calc((100vw - var(--reel-margin) * 2) * 5 / 4)
+        );
+        --frame-w: calc(var(--frame-h) * 4 / 5);
+        height: 100dvh;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background: #000000;
+      }
+
+      html.is-reel body {
+        width: var(--frame-w);
+        transform: translateZ(0);
+        outline: 1px solid #ffffff;
+        outline-offset: 2px;
+      }
+
+      #frame-probe {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: var(--frame-w);
+        height: var(--frame-h);
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      body {
+        height: var(--frame-h);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: var(--gap);
+        background: var(--wall);
+        color: var(--text);
+        font-family: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+        font-weight: 300;
+        font-optical-sizing: auto;
+        font-size: 12px;
+        letter-spacing: var(--tracking);
+      }
+
+      .card {
+        position: relative;
+        flex: 1 1 auto;
+        min-height: 0;
+        display: grid;
+        grid-template-rows: 79fr 7fr 14fr;
+        gap: var(--gap);
+      }
+
+      .row {
+        display: flex;
+        gap: var(--gap);
+        min-width: 0;
+        min-height: 0;
+      }
+
+      .bar,
+      .cell {
+        position: relative;
+        flex: var(--grow, 1) 1 0px;
+        min-width: var(--minw, 24px);
+        overflow: hidden;
+        background: var(--c);
+        transition:
+          flex-grow var(--ease),
+          min-width var(--ease);
+      }
+
+      .card.is-tuned .bar:not(.is-active),
+      .card.is-tuned .cell:not(.is-active) {
+        flex-grow: 0;
+        min-width: var(--sliver, 8px);
+      }
+
+      .bar {
+        padding: 0;
+        border: 0;
+        color: var(--ink);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .bar:focus-visible {
+        outline: 1.5px solid var(--toggle);
+        outline-offset: -3px;
+      }
+
+      .bar img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .bar:hover img,
+      .bar:focus-visible img {
+        opacity: 1;
+      }
+
+      .bar.is-hover img {
+        opacity: 1;
+      }
+
+      .card.is-tuned .bar.is-active img {
+        opacity: 0;
+      }
+
+      .bar-num {
+        position: absolute;
+        top: var(--pad);
+        left: var(--pad);
+        z-index: 1;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .bar:hover .bar-num,
+      .bar.is-hover .bar-num {
+        opacity: 0;
+      }
+
+      .card.is-tuned .bar-num {
+        opacity: 0;
+      }
+
+      .cell.is-active {
+        background: var(--toggle);
+        cursor: pointer;
+      }
+
+      .cell-fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: calc(var(--prog, 0) * 100%);
+        background: var(--marker);
+        display: none;
+      }
+
+      .cell-time {
+        position: absolute;
+        top: 50%;
+        right: var(--pad);
+        z-index: 1;
+        transform: translateY(-50%);
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+        display: none;
+      }
+
+      .cell.is-active .cell-fill,
+      .cell.is-active .cell-time {
+        display: block;
+      }
+
+      .blk {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 4px;
+        padding: var(--pad);
+        line-height: 1.15;
+        overflow: hidden;
+      }
+
+      .blk > * {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .blk > :first-child {
+        flex: none;
+        margin: calc(var(--pad) * -1) calc(var(--pad) * -1) 0;
+        padding: var(--pad) var(--pad) 7px;
+        border-bottom: var(--gap) solid var(--wall);
+      }
+
+      .cap {
+        position: relative;
+        flex: 1 1 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        white-space: normal;
+        --cap-h: 0px;
+        --cap-top: calc(var(--pad) - 4px);
+        --tri-h: calc(var(--square) - 3px);
+      }
+
+      .cap-scroll {
+        white-space: pre-line;
+        max-width: min(var(--cap-measure), calc(100% - var(--square) - 8px));
+        max-height: 100%;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: none;
+      }
+
+      .cap-scroll::-webkit-scrollbar {
+        display: none;
+      }
+
+      .cap.is-long .cap-scroll {
+        height: var(--cap-h);
+      }
+
+      .cap-btn {
+        position: absolute;
+        right: 0;
+        width: var(--square);
+        height: var(--tri-h);
+        padding: 0;
+        border: 0;
+        background: #000000;
+        cursor: pointer;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+      }
+
+      .cap-btn.is-off {
+        background: #c4c4c4;
+        cursor: default;
+      }
+
+      .cap-up {
+        top: var(--cap-top);
+        clip-path: polygon(50% 0, 100% 100%, 0 100%);
+      }
+
+      .cap-down {
+        bottom: 0;
+        clip-path: polygon(0 0, 100% 0, 50% 100%);
+      }
+
+      .n-first {
+        display: none;
+      }
+
+      .p-ch {
+        flex: 0.8 1 0;
+        background: var(--spine);
+        color: var(--text);
+      }
+
+      .p-name {
+        flex: 3.4 1 0;
+        background: var(--text);
+        color: #000000;
+      }
+
+      .p-medium {
+        flex: 0.7 1 0;
+        background: var(--title-hl-hover);
+        color: var(--text);
+      }
+
+      .p-time {
+        flex: 1.2 1 0;
+        background: var(--toggle);
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .time {
+        display: grid;
+        justify-content: start;
+      }
+
+      .time > * {
+        grid-area: 1 / 1;
+        white-space: nowrap;
+      }
+
+      .time-sizer {
+        visibility: hidden;
+      }
+
+      .air {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .light {
+        flex: none;
+        width: var(--square);
+        height: var(--square);
+        border: 1px solid var(--text);
+      }
+
+      .is-onair .light {
+        background: var(--marker);
+        border-color: var(--marker);
+      }
+
+      #screen {
+        position: absolute;
+        z-index: 2;
+        display: none;
+      }
+
+      #screen.is-visible {
+        display: block;
+      }
+
+      #screen iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+
+      .board {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        width: 100%;
+        height: var(--thickness);
+        flex: none;
+        padding: 0;
+        background: var(--board);
+        color: #000000;
+        white-space: nowrap;
+      }
+
+      .board span {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        padding: 0 var(--pad);
+      }
+
+      .board-right {
+        display: flex;
+        align-items: center;
+        height: 100%;
+      }
+
+      .board .views {
+        gap: 6px;
+      }
+
+      .view-btn,
+      .air-btn {
+        width: var(--square);
+        height: var(--square);
+        padding: 0;
+        border: 1px solid var(--toggle);
+        background: transparent;
+        cursor: pointer;
+      }
+
+      .view-btn {
+        border-radius: 50%;
+      }
+
+      .air-btn {
+        border-radius: 0;
+      }
+
+      .view-btn:hover,
+      .view-btn[aria-pressed="true"],
+      .air-btn:hover,
+      .air-btn[aria-pressed="true"] {
+        background: var(--toggle);
+      }
+
+      .view-btn:focus-visible,
+      .air-btn:focus-visible {
+        outline: 1.5px solid var(--text);
+        outline-offset: 1px;
+      }
+
+      .board-left {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        min-width: 0;
+      }
+
+      .back {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        height: 100%;
+        padding: 0 var(--pad);
+        border: 0;
+        background: var(--toggle);
+        color: var(--text);
+        font: inherit;
+        letter-spacing: inherit;
+        cursor: pointer;
+      }
+
+      .back[hidden] {
+        display: none;
+      }
+
+      .back::before {
+        content: "";
+        width: calc(var(--square) - 3px);
+        height: var(--square);
+        background: currentColor;
+        clip-path: polygon(100% 0, 100% 100%, 0 50%);
+      }
+
+      .back:hover,
+      .back:focus-visible {
+        background: var(--title-hl-hover);
+        outline: 0;
+      }
+
+      .board .term {
+        background: var(--spine);
+        color: var(--text);
+      }
+
+      .board .title {
+        background: var(--title-hl);
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      .board .title.is-on,
+      .board .title:focus-visible {
+        background: var(--title-hl-hover);
+        color: var(--text);
+      }
+
+      @media (hover: hover) {
+        .board .title:hover {
+          background: var(--title-hl-hover);
+          color: var(--text);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .p-medium,
+        .n-full {
+          display: none;
+        }
+
+        .n-first {
+          display: inline;
+        }
+
+        body.is-watching .board .term {
+          display: none;
+        }
+
+        .p-ch {
+          flex: 0 0 88px;
+        }
+
+        .p-name {
+          flex-grow: 2.2;
+        }
+
+        .p-time {
+          flex: 0 0 auto;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .bar,
+        .cell {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body data-view="even">
+    <div id="frame-probe" aria-hidden="true"></div>
+
+    <main class="card" id="card">
+      <div class="row bars" id="bars"></div>
+      <div class="row castle" id="castle" aria-hidden="true"></div>
+      <div class="row pluge" id="pluge">
+        <div class="blk p-ch">
+          <span>Channel</span>
+          <span id="i-ch"
+            ><span class="n-full" id="i-ch-full">—</span
+            ><span class="n-first" id="i-ch-first">—</span></span
+          >
+        </div>
+        <div class="blk p-name">
+          <span id="i-title">No Signal</span>
+          <div class="cap" id="cap">
+            <div class="cap-scroll" id="i-caption">Select A Channel</div>
+            <button
+              class="cap-btn cap-up is-off"
+              id="cap-up"
+              type="button"
+              aria-label="Scroll caption up"
+              aria-disabled="true"
+            ></button>
+            <button
+              class="cap-btn cap-down is-off"
+              id="cap-down"
+              type="button"
+              aria-label="Scroll caption down"
+              aria-disabled="true"
+            ></button>
+          </div>
+        </div>
+        <div class="blk p-medium">
+          <span>Medium</span>
+          <span id="i-medium">—</span>
+        </div>
+        <div class="blk p-time" id="p-time">
+          <span class="air"
+            ><i class="light" id="i-light" role="img" aria-label="Off Air"></i
+            ><span><span class="n-full">Running </span>Time</span></span
+          >
+          <span class="time"
+            ><span id="i-time">--:-- / --:--</span
+            ><span class="time-sizer" aria-hidden="true">00:00 / 00:00</span></span
+          >
+        </div>
+      </div>
+      <div id="screen"><div id="player-host"></div></div>
+    </main>
+
+    <div class="board" id="board">
+      <div class="board-left">
+        <span class="term">Critical Inquiry</span>
+        <button class="back" id="back" type="button" hidden>All Channels</button>
+      </div>
+      <div class="board-right">
+        <span class="views" role="group" aria-label="View">
+          <button
+            class="view-btn"
+            id="even"
+            type="button"
+            aria-label="Equal widths (off: widths follow running time)"
+            aria-pressed="true"
+          ></button>
+          <button
+            class="air-btn"
+            id="sweep"
+            type="button"
+            aria-label="Sweep across every channel"
+            aria-pressed="false"
+          ></button>
+        </span>
+        <span class="title" id="title" tabindex="0" role="button" aria-pressed="false">Research Prospectus</span>
+      </div>
+    </div>
+
+    <script>
+
+      const SHEET_ID = "1S87ib5t-LDwiEbXRdjpOKnc4y8kjPvUYVdypCmYWkxQ";
+      const API_KEY = "AIzaSyAurCVzGm8QT7To9on6jtkuUNDyni8PZAM";
+      const TAB_NAME = "fall_2026";
+      const RANGE = "B3:F20";
+      const FALLBACK_DUR = 180;
+
+      const ART = [
+        ["https://vimeo.com/71690559", "Glistening Thrills", "Jodie Mack", 513],
+        ["https://vimeo.com/95456597", "Pulsars e Quasars", "Paul Clipson", 288],
+        ["https://vimeo.com/364818459", "Zen Basketball", "Mike Hoolboom", 274],
+        ["https://vimeo.com/121251430", "Undergrowth", "Robert Todd", 736],
+        ["https://vimeo.com/157185741", "A Mystery Inside of a Fact", "Jonathan Schwartz", 953],
+        ["https://vimeo.com/1230811867", "Coeur Cerise", "Cissi Efraimsson", 217],
+        ["https://vimeo.com/1224418843", "Dear [Name]", "Amara Abbas", 241],
+        ["https://vimeo.com/22439234", "The Mountain", "TSO Photography", 185],
+        ["https://vimeo.com/1228694119", "Anonymity", "Thibaut Grevet", 141],
+      ];
+
+      const COLORS = [
+        { c: "var(--text)", ink: "#000000" },
+        { c: "var(--marker)", ink: "#000000" },
+        { c: "var(--title-hl)", ink: "var(--text)" },
+        { c: "var(--title-hl-hover)", ink: "var(--text)" },
+        { c: "var(--spine)", ink: "var(--text)" },
+        { c: "var(--board)", ink: "#000000" },
+      ];
+
+      const SWEEP_MS = 450;
+
+      const ABOUT_CH = "321";
+      const ABOUT_NAME = "Research Prospectus";
+      const ABOUT_TEXT =
+        "This website broadcasts a series of research prospectus trailers. " +
+        "Each colour bar carries one student's channel and what comes " +
+        "through is a brief transmission from a project still in formation.";
+
+      function shuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      function makeChannel(o) {
+        return {
+          name: o.name,
+          url: o.url,
+          title: o.title || "",
+          caption: o.caption || "",
+          medium: o.medium || "",
+          duration: o.duration || FALLBACK_DUR,
+          known: !!o.duration,
+          standIn: !!o.standIn,
+          thumb: "",
+          aspect: 16 / 9,
+        };
+      }
+
+      function placeholderData() {
+        const mediums = ["Printed Matter", "Website", "Video"];
+        return shuffle([...ART, ...ART]).map(([url, title, by, dur], i) =>
+          makeChannel({
+            name: "Placeholder Name " + String(i + 1).padStart(2, "0"),
+            url,
+            title,
+            caption:
+              i % 3 === 0
+                ? `A film by ${by}. This is a longer placeholder caption, ` +
+                  "written out at length so the caption column overflows and " +
+                  "the scroll arrows appear. A student might describe the " +
+                  "question behind the project here, the material they are " +
+                  "working with, and where the research is headed next."
+                : "A film by " + by,
+            medium: mediums[i % mediums.length],
+            duration: dur,
+          }),
+        );
+      }
+
+      function breaks(raw, joiner) {
+        return (raw || "")
+          .replace(/[ \t]*(?:<br\s*\/?>|\r?\n)[ \t]*/gi, joiner)
+          .trim();
+      }
+
+      function normalizeUrl(raw) {
+        const v = (raw || "").trim();
+        if (!v) return "";
+        if (/^\d+$/.test(v)) return "https://vimeo.com/" + v;
+        const m = v.match(
+          /player\.vimeo\.com\/video\/(\d+)(?:\?[^#]*?\bh=([0-9a-z]+))?/i,
+        );
+        if (m) return "https://vimeo.com/" + m[1] + (m[2] ? "/" + m[2] : "");
+        return /^https?:\/\//.test(v) ? v : "https://" + v;
+      }
+
+      async function sheetData() {
+        const m = SHEET_ID.match(/\/d\/([\w-]+)/);
+        const id = m ? m[1] : SHEET_ID.trim();
+        const url =
+          `https://sheets.googleapis.com/v4/spreadsheets/${id}` +
+          `/values/${encodeURIComponent(TAB_NAME + "!" + RANGE)}?key=${API_KEY}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          const why = body && body.error ? body.error.message : "";
+          throw new Error(`Sheet request failed (${res.status}): ${why}`);
+        }
+        const { values = [] } = await res.json();
+
+        const spare = shuffle(ART);
+        let dealt = 0;
+        return values
+          .filter((row) => row[0] && row[0].trim())
+          .map((row) => {
+            const link = normalizeUrl(row[1]);
+            const art = link ? null : spare[dealt++ % spare.length];
+            return makeChannel({
+              name: row[0].trim(),
+              url: link || art[0],
+              title: breaks(row[2], " "),
+              caption: breaks(row[3], "\n"),
+              medium: breaks(row[4], " "),
+              duration: art ? art[3] : 0,
+              standIn: !!art,
+            });
+          });
+      }
+
+      async function enrich(ch) {
+        try {
+          const res = await fetch(
+            "https://vimeo.com/api/oembed.json?width=640&url=" +
+              encodeURIComponent(ch.url),
+          );
+          if (!res.ok) return;
+          const o = await res.json();
+          if (o.duration) {
+            ch.duration = o.duration;
+            ch.known = true;
+          }
+          if (!ch.title && o.title && !ch.standIn) {
+            ch.title = o.title;
+            if (shownCh === ch) showInfo(ch === tunedCh ? null : ch);
+          }
+          if (o.width && o.height) ch.aspect = o.width / o.height;
+          if (o.thumbnail_url) {
+            ch.thumb = o.thumbnail_url.replace(/_\d+x\d+/, "_640");
+            ch.img.src = ch.thumb;
+          }
+        } catch (err) {
+        }
+        scheduleFit();
+      }
+
+      function fmt(sec) {
+        if (!isFinite(sec)) return "--:--";
+        const s = Math.max(0, Math.floor(sec));
+        return (
+          String(Math.floor(s / 60)).padStart(2, "0") +
+          ":" +
+          String(s % 60).padStart(2, "0")
+        );
+      }
+
+      const card = document.getElementById("card");
+      const barsEl = document.getElementById("bars");
+      const castleEl = document.getElementById("castle");
+      const screen = document.getElementById("screen");
+      const host = document.getElementById("player-host");
+      const pluge = document.getElementById("pluge");
+      const evenBtn = document.getElementById("even");
+      const sweepBtn = document.getElementById("sweep");
+      const backBtn = document.getElementById("back");
+      const capEl = document.getElementById("cap");
+      const capUp = document.getElementById("cap-up");
+      const capDown = document.getElementById("cap-down");
+      const info = {
+        chFull: document.getElementById("i-ch-full"),
+        chFirst: document.getElementById("i-ch-first"),
+        title: document.getElementById("i-title"),
+        caption: document.getElementById("i-caption"),
+        medium: document.getElementById("i-medium"),
+        time: document.getElementById("i-time"),
+        light: document.getElementById("i-light"),
+        box: document.getElementById("p-time"),
+      };
+
+      let channels = [];
+      let player = null;
+      let tunedCh = null;
+      const CAP_SPEED = 42;
+      let capDir = 0;
+      let capPos = 0;
+      let capTarget = null;
+      let capLast = 0;
+      let capRaf = null;
+      let capLine = 14;
+      let shownCh = null;
+      let tuneToken = 0;
+      let sweepTimer = null;
+      let sweepIndex = -1;
+      let about = false;
+      let tunedTime = "--:-- / --:--";
+
+      function build(ch) {
+        const bar = document.createElement("button");
+        bar.type = "button";
+        bar.className = "bar";
+        const num = document.createElement("span");
+        num.className = "bar-num";
+        const img = document.createElement("img");
+        img.alt = "";
+        img.decoding = "async";
+        bar.append(img, num);
+        bar._ch = ch;
+
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        const fill = document.createElement("span");
+        fill.className = "cell-fill";
+        const time = document.createElement("span");
+        time.className = "cell-time";
+        cell.append(fill, time);
+        cell._ch = ch;
+
+        Object.assign(ch, { bar, num, img, cell, cellTime: time });
+      }
+
+      function render() {
+        channels.forEach((ch, i) => {
+          if (!ch.bar) build(ch);
+          const col = COLORS[i % COLORS.length];
+          ch.bar.style.setProperty("--c", col.c);
+          ch.bar.style.setProperty("--ink", col.ink);
+          ch.num.textContent = String(i + 1).padStart(2, "0");
+          ch.bar.setAttribute("aria-label", `Channel ${i + 1}, ${ch.name}`);
+
+          ch.cell.style.setProperty("--c", "var(--toggle)");
+        });
+        barsEl.replaceChildren(...channels.map((ch) => ch.bar));
+        castleEl.replaceChildren(...channels.map((ch) => ch.cell));
+        showInfo(null);
+        scheduleFit();
+      }
+
+      function px(name, fallback) {
+        const v = parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue(name),
+        );
+        return isNaN(v) ? fallback : v;
+      }
+
+      function fitBars() {
+        const n = channels.length;
+        if (!n) return;
+        const W = barsEl.clientWidth;
+        const gaps = (n - 1) * px("--gap", 2);
+        const minw = Math.max(4, Math.min(24, ((W - gaps) / n) * 0.6));
+        const sliver = Math.max(
+          3,
+          Math.min(12, (W * 0.3 - gaps) / Math.max(1, n - 1)),
+        );
+        card.style.setProperty("--minw", minw + "px");
+        card.style.setProperty("--sliver", sliver + "px");
+
+        const even = document.body.dataset.view === "even";
+        channels.forEach((ch) => {
+          const g = even ? 1 : ch.duration;
+          ch.bar.style.setProperty("--grow", g);
+          ch.cell.style.setProperty("--grow", g);
+        });
+      }
+
+      function placeScreen() {
+        if (tunedCh) {
+          const c = card.getBoundingClientRect();
+          const r = tunedCh.bar.getBoundingClientRect();
+          const a = tunedCh.aspect || 16 / 9;
+          let w = r.width;
+          let h = w / a;
+          if (h > r.height) {
+            h = r.height;
+            w = h * a;
+          }
+          screen.style.left = r.left - c.left + (r.width - w) / 2 + "px";
+          screen.style.top = r.top - c.top + (r.height - h) / 2 + "px";
+          screen.style.width = w + "px";
+          screen.style.height = h + "px";
+        }
+        requestAnimationFrame(placeScreen);
+      }
+
+      function setCh(full, first) {
+        info.chFull.textContent = full;
+        info.chFirst.textContent = first || full;
+      }
+
+      function showInfo(ch) {
+        if (capRaf) cancelAnimationFrame(capRaf);
+        capRaf = null;
+        fillInfo(ch);
+        fitCaption(true);
+      }
+
+      function fillInfo(ch) {
+        pluge.classList.toggle("is-about", about);
+        if (about) {
+          shownCh = null;
+          setCh(ABOUT_CH);
+          info.title.textContent = ABOUT_NAME;
+          info.caption.textContent = ABOUT_TEXT;
+          info.medium.textContent = "—";
+          info.time.textContent = "--:-- / --:--";
+          return;
+        }
+        const c = ch || tunedCh;
+        shownCh = c;
+        if (!c) {
+          setCh("—");
+          info.title.textContent = "No Signal";
+          info.caption.textContent = "Select A Channel";
+          info.medium.textContent = "—";
+          info.time.textContent = "--:-- / --:--";
+          return;
+        }
+        setCh(c.name, c.name.split(/\s+/)[0]);
+        info.title.textContent = c.title || " ";
+        info.caption.textContent = c.caption || " ";
+        info.medium.textContent = c.medium || "—";
+        info.time.textContent =
+          c === tunedCh
+            ? tunedTime
+            : "00:00 / " + (c.known ? fmt(c.duration) : "--:--");
+      }
+
+      function setOnAir(on) {
+        info.box.classList.toggle("is-onair", on);
+        info.light.setAttribute("aria-label", on ? "On Air" : "Off Air");
+      }
+
+      function fitCaption(reset) {
+        const el = info.caption;
+        const top = el.scrollTop;
+        capEl.classList.remove("is-long");
+        const cs = getComputedStyle(el);
+        capLine = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.15;
+        const avail = capEl.clientHeight;
+        if (el.scrollHeight > avail + 1) {
+          const inset = Math.max(0, px("--pad", 10) - 4);
+          capEl.style.setProperty(
+            "--cap-h",
+            Math.max(capLine, avail - inset) + "px",
+          );
+          capEl.classList.add("is-long");
+        }
+        el.scrollTop = reset ? 0 : top;
+        updateCapArrows();
+      }
+
+      function setCapOff(btn, off) {
+        btn.classList.toggle("is-off", off);
+        btn.setAttribute("aria-disabled", String(off));
+      }
+
+      function updateCapArrows() {
+        const el = info.caption;
+        const long = capEl.classList.contains("is-long");
+        const max = el.scrollHeight - el.clientHeight;
+        setCapOff(capUp, !long || el.scrollTop <= 1);
+        setCapOff(capDown, !long || el.scrollTop >= max - 1);
+      }
+
+      function capFrame(t) {
+        const el = info.caption;
+        const max = el.scrollHeight - el.clientHeight;
+        const dt = Math.min(50, t - capLast);
+        capLast = t;
+        capPos += (capDir * CAP_SPEED * dt) / 1000;
+
+        let done = false;
+        if (
+          capTarget !== null &&
+          (capDir > 0 ? capPos >= capTarget : capPos <= capTarget)
+        ) {
+          capPos = capTarget;
+          done = true;
+        }
+        if (capPos <= 0 || capPos >= max) {
+          capPos = Math.min(max, Math.max(0, capPos));
+          done = true;
+        }
+        el.scrollTop = capPos;
+        capRaf = done ? null : requestAnimationFrame(capFrame);
+      }
+
+      function capHold(dir) {
+        capDir = dir;
+        capTarget = null;
+        capPos = info.caption.scrollTop;
+        capLast = performance.now();
+        if (!capRaf) capRaf = requestAnimationFrame(capFrame);
+      }
+
+      function capRelease() {
+        if (!capRaf || capTarget !== null) return;
+        const n = capPos / capLine;
+        capTarget =
+          (capDir > 0 ? Math.ceil(n - 0.001) : Math.floor(n + 0.001)) * capLine;
+      }
+
+      function setWatching(on) {
+        backBtn.hidden = !on;
+        document.body.classList.toggle("is-watching", on);
+      }
+
+      function clearActive() {
+        document
+          .querySelectorAll(".is-active")
+          .forEach((n) => n.classList.remove("is-active"));
+      }
+
+      async function loadInto(url) {
+        if (!player) {
+          player = new Vimeo.Player(host, {
+            url,
+            controls: true,
+            loop: false,
+            dnt: true,
+            title: false,
+            byline: false,
+            portrait: false,
+            playsinline: true,
+            color: "f57600",
+          });
+
+          player.on("timeupdate", (d) => {
+            if (!tunedCh) return;
+            tunedCh.cell.style.setProperty("--prog", d.percent || 0);
+            tunedCh.cellTime.textContent = fmt(d.seconds);
+            tunedTime = fmt(d.seconds) + " / " + fmt(d.duration);
+            if (shownCh === tunedCh) info.time.textContent = tunedTime;
+          });
+          player.on("play", () => setOnAir(true));
+          player.on("pause", () => setOnAir(false));
+          player.on("ended", () => {
+            setOnAir(false);
+            off();
+          });
+
+          await player.ready();
+          return player;
+        }
+        await player.loadVideo(url);
+        return player;
+      }
+
+      async function tune(ch) {
+        if (!ch) return;
+        unpinAbout();
+        stopSweep(true);
+        const token = ++tuneToken;
+        tunedCh = ch;
+        tunedTime = "00:00 / " + (ch.known ? fmt(ch.duration) : "--:--");
+
+        clearActive();
+        ch.bar.classList.add("is-active");
+        ch.cell.classList.add("is-active");
+        ch.cell.style.setProperty("--prog", 0);
+        ch.cellTime.textContent = "00:00";
+        card.classList.add("is-tuned");
+        setWatching(true);
+        screen.classList.add("is-visible");
+        showInfo(ch);
+
+        if (!window.Vimeo) return;
+        try {
+          const p = await loadInto(ch.url);
+          if (token !== tuneToken) return;
+
+          const [d, vw, vh] = await Promise.all([
+            p.getDuration().catch(() => 0),
+            p.getVideoWidth().catch(() => 0),
+            p.getVideoHeight().catch(() => 0),
+          ]);
+          if (token !== tuneToken) return;
+          if (d) {
+            ch.duration = d;
+            ch.known = true;
+          }
+          if (vw && vh) ch.aspect = vw / vh;
+          scheduleFit();
+
+          await p.setCurrentTime(0).catch(() => {});
+          if (token !== tuneToken) return;
+          await p.play().catch(async () => {
+            await p.setMuted(true).catch(() => {});
+            await p.play().catch(() => {});
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      function off() {
+        stopSweep(true);
+        tuneToken++;
+        tunedCh = null;
+        if (player) player.pause().catch(() => {});
+        screen.classList.remove("is-visible");
+        card.classList.remove("is-tuned");
+        setWatching(false);
+        clearActive();
+        setOnAir(false);
+        showInfo(null);
+      }
+
+      function step(dir) {
+        if (!channels.length) return;
+        let i = tunedCh ? channels.indexOf(tunedCh) : dir > 0 ? -1 : 0;
+        i = (i + dir + channels.length) % channels.length;
+        tune(channels[i]);
+      }
+
+      function clearSweepHover() {
+        document
+          .querySelectorAll(".bar.is-hover")
+          .forEach((n) => n.classList.remove("is-hover"));
+      }
+
+      function sweepStep() {
+        clearSweepHover();
+        sweepIndex = (sweepIndex + 1) % channels.length;
+        const ch = channels[sweepIndex];
+        ch.bar.classList.add("is-hover");
+        showInfo(ch);
+      }
+
+      function startSweep() {
+        if (!channels.length) return;
+        if (tunedCh) off();
+        sweepIndex = -1;
+        sweepBtn.setAttribute("aria-pressed", "true");
+        sweepStep();
+        sweepTimer = setInterval(sweepStep, SWEEP_MS);
+      }
+
+      function stopSweep(quiet) {
+        if (!sweepTimer) return;
+        clearInterval(sweepTimer);
+        sweepTimer = null;
+        sweepBtn.setAttribute("aria-pressed", "false");
+        clearSweepHover();
+        if (!quiet) showInfo(null);
+      }
+
+      const titleEl = document.getElementById("title");
+      let aboutPinned = false;
+      let aboutHover = false;
+      let aboutMuted = false;
+
+      function syncAbout() {
+        about = aboutPinned || (aboutHover && !aboutMuted);
+        titleEl.classList.toggle("is-on", aboutPinned);
+        titleEl.setAttribute("aria-pressed", String(aboutPinned));
+        showInfo(null);
+      }
+
+      function toggleAbout() {
+        aboutPinned = !aboutPinned;
+        aboutMuted = !aboutPinned;
+        syncAbout();
+      }
+
+      function unpinAbout() {
+        if (!aboutPinned) return;
+        aboutPinned = false;
+        syncAbout();
+      }
+
+      function seek(cell, clientX) {
+        if (!player || cell._ch !== tunedCh) return;
+        const r = cell.getBoundingClientRect();
+        const frac = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+        player
+          .getDuration()
+          .then((d) => player.setCurrentTime(frac * d))
+          .catch(() => {});
+      }
+
+      function toggleEven() {
+        const even = document.body.dataset.view !== "even";
+        document.body.dataset.view = even ? "even" : "time";
+        evenBtn.setAttribute("aria-pressed", String(even));
+        scheduleFit();
+      }
+
+      function setReel(on) {
+        document.documentElement.classList.toggle("is-reel", on);
+        scheduleFit();
+      }
+
+      if (new URLSearchParams(location.search).has("reel")) {
+        document.documentElement.classList.add("is-reel");
+      }
+
+      let fitQueued = false;
+      function scheduleFit() {
+        if (fitQueued) return;
+        fitQueued = true;
+        requestAnimationFrame(() => {
+          fitQueued = false;
+          fitBars();
+          fitCaption(false);
+        });
+      }
+
+      window.addEventListener("resize", scheduleFit);
+      if (document.fonts) document.fonts.ready.then(scheduleFit);
+
+      let lastPointer = "mouse";
+      document.addEventListener(
+        "pointerdown",
+        (e) => (lastPointer = e.pointerType || "mouse"),
+        true,
+      );
+      const byTouch = () => lastPointer !== "mouse" && lastPointer !== "key";
+
+      document.addEventListener("mouseover", (e) => {
+        const bar = e.target.closest(".bar");
+        if (bar) {
+          stopSweep(true);
+          return showInfo(bar._ch);
+        }
+        if (e.target.closest("#title") && !byTouch()) {
+          aboutHover = true;
+          syncAbout();
+        }
+      });
+
+      document.addEventListener("mouseout", (e) => {
+        if (e.target.closest("#title")) {
+          if (byTouch()) return;
+          const to = e.relatedTarget;
+          if (to && to.closest && to.closest("#title")) return;
+          aboutHover = false;
+          aboutMuted = false;
+          return syncAbout();
+        }
+        const from = e.target.closest(".bar");
+        if (!from || sweepTimer) return;
+        const to = e.relatedTarget;
+        if (to && to.closest && to.closest(".bar") === from) return;
+        showInfo(null);
+      });
+
+      document.addEventListener("focusin", (e) => {
+        const bar = e.target.closest(".bar");
+        if (bar) return showInfo(bar._ch);
+      });
+
+      document.addEventListener("focusout", (e) => {
+        if (e.target.closest(".bar") && !sweepTimer) showInfo(null);
+      });
+
+      document.addEventListener("click", (e) => {
+        if (e.target.closest("#sweep")) {
+          return sweepTimer ? stopSweep() : startSweep();
+        }
+        if (e.target.closest("#back")) return off();
+        if (e.target.closest("#even")) return toggleEven();
+        if (e.target.closest("#title")) return toggleAbout();
+
+        const cell = e.target.closest(".cell.is-active");
+        if (cell) return seek(cell, e.clientX);
+
+        const bar = e.target.closest(".bar");
+        if (bar) {
+          if (tunedCh === bar._ch) return off();
+          return tune(bar._ch);
+        }
+      });
+
+      document.addEventListener("keydown", (e) => {
+        lastPointer = "key";
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+        if (e.target === titleEl && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          return toggleAbout();
+        }
+        if (e.key === "Escape") {
+          unpinAbout();
+          stopSweep();
+          return off();
+        }
+        if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+          e.preventDefault();
+          return step(e.key === "ArrowRight" ? 1 : -1);
+        }
+        if (e.key === "1") evenBtn.click();
+        if (e.key === "2") sweepBtn.click();
+        if (e.key === "r" || e.key === "R") {
+          setReel(!document.documentElement.classList.contains("is-reel"));
+        }
+      });
+
+      info.caption.addEventListener("scroll", updateCapArrows);
+      [
+        [capUp, -1],
+        [capDown, 1],
+      ].forEach(([btn, dir]) => {
+        btn.addEventListener("pointerdown", (e) => {
+          e.preventDefault();
+          if (!btn.classList.contains("is-off")) capHold(dir);
+        });
+        btn.addEventListener("mousedown", (e) => e.preventDefault());
+        btn.addEventListener("dblclick", (e) => e.preventDefault());
+        btn.addEventListener("contextmenu", (e) => e.preventDefault());
+        btn.addEventListener("click", (e) => {
+          if (e.detail !== 0 || btn.classList.contains("is-off")) return;
+          capHold(dir);
+          capRelease();
+        });
+      });
+      window.addEventListener("pointerup", capRelease);
+      window.addEventListener("pointercancel", capRelease);
+      window.addEventListener("blur", capRelease);
+
+      card.addEventListener(
+        "wheel",
+        (e) => {
+          if (!capEl.classList.contains("is-long")) return;
+          if (e.target.closest("#cap")) return;
+          info.caption.scrollTop += e.deltaY;
+        },
+        { passive: true },
+      );
+
+      (async function init() {
+        let data = null;
+        if (SHEET_ID && API_KEY) {
+          try {
+            data = await sheetData();
+          } catch (err) {
+            console.error(err);
+          }
+        }
+        if (!data || !data.length) data = placeholderData();
+
+        channels = shuffle(data);
+        render();
+        requestAnimationFrame(placeScreen);
+        channels.forEach(enrich);
+      })();
+    </script>
+  </body>
+</html>
