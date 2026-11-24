@@ -125,13 +125,20 @@
         background: var(--c);
         transition:
           flex-grow var(--ease),
+          flex-basis var(--ease),
           min-width var(--ease);
       }
 
       .card.is-tuned .bar:not(.is-active),
       .card.is-tuned .cell:not(.is-active) {
-        flex-grow: 0;
+        flex-grow: 1;
         min-width: var(--sliver, 8px);
+      }
+
+      .card.is-tuned .bar.is-active,
+      .card.is-tuned .cell.is-active {
+        flex: 0 0 var(--tuned-w, 100%);
+        min-width: 0;
       }
 
       .bar {
@@ -898,6 +905,12 @@
           ch.bar.style.setProperty("--grow", g);
           ch.cell.style.setProperty("--grow", g);
         });
+
+        if (tunedCh) {
+          const room = Math.max(0, W - (n - 1) * (sliver + px("--gap", 2)));
+          const wrap = barsEl.clientHeight * (tunedCh.aspect || 16 / 9);
+          card.style.setProperty("--tuned-w", Math.min(room, wrap) + "px");
+        }
       }
 
       function placeScreen() {
@@ -1096,6 +1109,7 @@
         ch.cell.classList.add("is-active");
         ch.cell.style.setProperty("--prog", 0);
         ch.cellTime.textContent = "00:00";
+        fitBars();
         card.classList.add("is-tuned");
         setWatching(true);
         screen.classList.add("is-visible");
