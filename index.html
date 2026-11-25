@@ -1062,38 +1062,43 @@
       }
 
       async function loadInto(url) {
-        if (!player) {
-          player = new Vimeo.Player(host, {
-            url,
-            controls: true,
-            loop: false,
-            dnt: true,
-            title: false,
-            byline: false,
-            portrait: false,
-            playsinline: true,
-            color: "f57600",
-          });
+        const old = player;
+        player = null;
+        if (old) old.destroy().catch(() => {});
 
-          player.on("timeupdate", (d) => {
-            if (!tunedCh) return;
-            tunedCh.cell.style.setProperty("--prog", d.percent || 0);
-            tunedCh.cellTime.textContent = fmt(d.seconds);
-            tunedTime = fmt(d.seconds) + " / " + fmt(d.duration);
-            if (shownCh === tunedCh) info.time.textContent = tunedTime;
-          });
-          player.on("play", () => setOnAir(true));
-          player.on("pause", () => setOnAir(false));
-          player.on("ended", () => {
-            setOnAir(false);
-            off();
-          });
+        const mount = document.createElement("div");
+        host.replaceChildren(mount);
 
-          await player.ready();
-          return player;
-        }
-        await player.loadVideo(url);
-        return player;
+        const p = new Vimeo.Player(mount, {
+          url,
+          controls: true,
+          loop: false,
+          dnt: true,
+          title: false,
+          byline: false,
+          portrait: false,
+          playsinline: true,
+          color: "f57600",
+        });
+        player = p;
+
+        p.on("timeupdate", (d) => {
+          if (p !== player || !tunedCh) return;
+          tunedCh.cell.style.setProperty("--prog", d.percent || 0);
+          tunedCh.cellTime.textContent = fmt(d.seconds);
+          tunedTime = fmt(d.seconds) + " / " + fmt(d.duration);
+          if (shownCh === tunedCh) info.time.textContent = tunedTime;
+        });
+        p.on("play", () => p === player && setOnAir(true));
+        p.on("pause", () => p === player && setOnAir(false));
+        p.on("ended", () => {
+          if (p !== player) return;
+          setOnAir(false);
+          off();
+        });
+
+        await p.ready();
+        return p;
       }
 
       async function tune(ch) {
